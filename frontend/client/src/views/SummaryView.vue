@@ -1,279 +1,223 @@
 <template>
-    <div>
-        <h1>Dashboard</h1>
-    <router-link to="/Dashboard">Home/</router-link>
+  <div class="SummaryView">
+
+<h1 align ="right">
+  <button  @click="Dashboard()">Dashboard</button> 
+  <button  @click="MyAccount()">My Account</button> 
+  <button v-if="Category == 'Junior'" @click="Assesments()">Assesments/</button>
+  <button v-else @click="MyAssesments()">My Assesments/</button> 
     <button @click="Logout()">Logout/</button>
-<br></br>
-<br></br>
-    <div class="tableContainer" >
-  <center>
+
+</h1>
+
+
+  
+
+    <img alt="Vue logo" src="../assets/Placement_Logo.jpg" />
+    <Login msg="Placement Portal" />
+  
+<br>
+
+</br>
+<br>
+</br>
+
+<br>
+</br>
+
+    <div id="app">
+
+      <center>
     <table>
-
-              <tbody>
-                  <tr v-if="isPending">
-                      <td :colspan="columns.length">
-                          <placeholder-rows :rows="10"></placeholder-rows>
-                      </td>
-                  </tr>
-                  <template v-else>
-          
-                      <tc v-for="list in List_Names" >
-                        <td>
-                            <select class="form-control" id="format" v-on:change="changeRoute($event)"> 
-                                  <option selected >  {{ list }}  </option> 
-                                </select>
-                                <br>
-                            </br>
-                            <p>Completed Tasks:  
-                            {{ Tasks[list]["Completed"] }}
-                          </p>
-                            <p>Pending Tasks:  
-                            {{ Tasks[list]["Pending"] }}
-                          </p>
-                          <p>Passed Deadlines:  
-                            {{ Tasks[list]["Passed Deadline"] }}
-                          </p>
-                            
-                              <Bar
-    :chart-options="chartOptions"
-    :chart-data=BarData[list]
-    :chart-id="chartId"
-    :dataset-id-key="datasetIdKey"
-    :plugins="plugins"
-    :css-classes="cssClasses"
-    :styles="styles"
-    :width="width"
-    :height="height"
-  />
-                            </td>
-                            </tc>
-                </template>
-            
-                </tbody>
-    </table>
-    </center>
-
-    </div>
- 
-    </div>
-  </template>
-  
-  <script>
-
-import { Bar } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js'
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
-
-export default {
-  name: 'BarChart',
-  components: { Bar },
-  props: {
-    chartId: {
-      type: String,
-      default: 'bar-chart'
-    },
-    datasetIdKey: {
-      type: String,
-      default: 'label'
-    },
-    width: {
-      type: Number,
-      default: 400
-    },
-    height: {
-      type: Number,
-      default: 400
-    },
-    cssClasses: {
-      default: '',
-      type: String
-    },
-    styles: {
-      type: Object,
-      default: () => {}
-    },
-    plugins: {
-      type: Object,
-      default: () => {}
-    }
-  },
-  data() {
-    return {
-      chartData: {
-        labels: [ 'January', 'February', 'March' ],
-        datasets: [ { data: [40, 20, 12] } ],
-      },
-      chartOptions: {
-        responsive: true
-      },
-            id:sessionStorage.getItem("id"),
-            token:localStorage.getItem("token"),
-            AllLists:JSON.parse(sessionStorage.getItem("All Lists")),
-            AllCards:JSON.parse(sessionStorage.getItem("All Cards")),
-            Tasks:{},
-            List_Names:[],
-            Images:"",
-            TR:{},
-            BarData:{},
-        }
-      },
-      async created(){
-            console.log(this.AllLists) ;
-            this.List_Names= Object.keys(this.AllLists);
-            console.log("ALL CARD");
-            console.log(this.chartData.labels);
-            let r = Object.values(this.AllCards);
-            let k=Object.keys(this.AllCards);
-            let e={};
-            let finale={};
-            for (const [key, value] of Object.entries(this.AllLists)) {
-          console.log(key, value);
-          finale[key]={"labels":[],datasets:[]};
-          e[key]={"Completed":0,"Pending":0,"Deadlines":[],"Passed Deadline":0};
-          // this.Tr[key]={};
-          // this.Tr[key]={"Completed":0,"Pending":0};
-            console.log(e);
-  
-            let deadli=[];
-            let ty=[];
-          for (let j = 0; j < k.length; j++)
-          {
-            let t={};
-           
-              try{
-              console.log(r[j][0]["Title"]);
-              t=r[j][0];
-              }
-              catch{
-                console.log(r[j]["Title"]);
-                t=r[j];
-              }
-              if (value==t["List_Id"])
-              {
-                console.log("HELLO");
-                if (t["Status"]=="Completed")
-                {
-                    e[key]["Completed"]=e[key]["Completed"]+1;
-                    console.log(t["Deadline"])
-                }
-                else{
-                  e[key]["Pending"]=e[key]["Pending"]+1;
-                  deadli.push(t["Deadline"]);
-                  ty.push(new Date(t["Deadline"]))
-                }
-              }
-          }
-          console.log("Pending Dates for List"+value);
-          console.log(deadli);
-          console.log("Pending Dates for TY"+value);
-          console.log(ty);
+<p>Top Topics</p>
+      <thead>
+        <tr>
+          <th>Thread Name</th>
+          <th>Thread Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="thread in TopTopics" :key="thread.thread_id">
          
-          ty.sort((date1, date2) => new Date(date1).setHours(0, 0, 0, 0) - new Date(date2).setHours(0, 0, 0, 0));
-          // deadli.sort(function(a,b){return a.getDate() - b.getDate()});
-          console.log("Sorted Pending Dates for TY"+value);
-          console.log(ty);
-          // e[key]["Deadlines"]=ty;
-          // finale[key]["labels"]=ty;
-          const map = {};
-          const convert=[];
-          let Deadline_Passed=0;
-          var current_time = new Date();
-          console.log("CURRENT TIME");
-          console.log(current_time);
-          for(let p = 0; p < ty.length; p++){
-      map[ty[p]] = (map[ty[p]] || 0) + 1;
-      
-      if(current_time>ty[p])
-      {
-        Deadline_Passed=Deadline_Passed+1;
-      }
-      convert.push(ty[p].toDateString());
+          <td>{{ thread.Title }} </td>
+          <td>{{ thread.Thread_count  }}  </td>
+        </tr>
+      </tbody>
+      <p>Top Assesments</p>
+      <thead>
+        <tr>
+          <th>Assesments Name</th>
+          <th>Student Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="thread in TopAsses" :key="thread.assesment_id">
+         
+          <td>{{ thread.Name }} </td>
+          <td>{{ thread.Student_Count  }}  </td>
+        </tr>
+      </tbody>
+      <p>Top Contributors</p>
+      <thead>
+        <tr>
+          <th>User Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="thread in TopContri" :key="thread.post_id">
+         
+          <td>{{ thread.Poster_Name }} </td>
+          <!-- <td>{{ thread.Thread_count  }}  </td> -->
+        </tr>
+      </tbody>
+    </table>
+    <br>
+  </br>
 
-              }
-              console.log("FREQUENCY")
-              console.log(Deadline_Passed);
-              // console.log(Object.values(map));
-              let u=[];
-              for (const [key, value] of Object.entries(map)) {
-              console.log(value);
-             u.push(value);
-             console.log(u);
-        }
-        console.log("u")
-        console.log(u);
-        let unique = convert.filter((item, i, ar) => ar.indexOf(item) === i);
-                  // e[key]["Deadlines"]=convert;
-          // finale[key]["labels"]=convert;
-          // console.log(convert);
-          e[key]["Deadlines"]=unique;
-          finale[key]["labels"]=unique;
-          e[key]["Passed Deadline"]=Deadline_Passed;
-          console.log(unique);
-        finale[key]["datasets"]=[{ "data":u,"barPercentage": 1,
-        "maxBarThickness": 20,
-        "minBarLength": 2,"backgroundColor":"Blue"}];
+  </center>
+  </div>
+
+  </div>
+
+</template>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script>
+export default {
+name: "SummaryView",
+data(){
+      return {
+          user_id :  sessionStorage.getItem("user_id"),
+          Name: sessionStorage.getItem("Name"),
+          TopContri:null,
+          TopAsses:null,
+          TopTopics:null,
+          Category: sessionStorage.getItem("Category"),
+          isJunior: true,
+          password: sessionStorage.getItem("password")
       }
+  },
+  async created()
+  {
+    
  
-        
-        console.log("FINAL E");
-        console.log(finale);
-        this.Tasks=e;
-        console.log(this.Tasks);
-        this.BarData=finale;
+    console.log("LET'S START WITH CONTRI");
+    return fetch(`http://localhost:8000/api/${this.user_id}/${this.password}/TopContri`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+        })
+      .then((response) => response.json())
+      .then((re_data) => {
+        console.log(re_data);
+      this.TopContri = re_data;
 
-          //   for (let j = 0; j < k.length; j++)
-          // {
-          //   for(let h=0;h<this.List_Names.length;h++)
-          //   {
-          //     let t={}
-          //     try{
-          //     console.log(r[j][0]["Title"]);
-          //     t=r[j][0];
-          //     }
-          //     catch{
-          //       console.log(r[j]["Title"]);
-          //       t=r[j];
-          //     }
-          //     // if (this.AllLists[h]==t["List_Id"])
-          //     // {
-          //     // this.Tr[this.List_Names[h]]={"Completed":0,"Pending":0}
-          //     // if (t["Status"]=="Completed")
-          //     // {
-          //     //   this.Tr[this.List_Names[h]]["Completed"]= this.Tr[this.List_Names[h]]["Completed"]+1;
-          //     // }
-          //     // else{
-          //     //   this.Tr[this.List_Names[h]]["Pending"]= this.Tr[this.List_Names[h]]["Pending"]+1;
-          //     // }
-          //     // }
-          //   }
-            
-          // }
-   
+        console.log("LET'S START WITH ASSES");
+      return fetch(`http://localhost:8000/api/${this.user_id}/${this.password}/TopAsses`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+        })
+      .then((response) => response.json())
+      .then((re_data) => {
+        console.log(re_data);
+        this.TopAsses=re_data;
 
-      //           fetch(`http://localhost:8000/${this.id}/SummaryStats`, {
-      //   method: "GET",
-      //   headers: {
-      //     "Content-Type": "application/json;charset=utf-8",
-      //     "Authentication-Token": `${this.token}`,
-      //   }
-      //   // ,body: JSON.stringify({  List_Id: this.List_Id }),
-      // }).then(function(response) {
-      //           console.log("HELLOR");
-      //           console.log(response);
+        console.log("LET'S START WITH Topics");
+      return fetch(`http://localhost:8000/api/${this.user_id}/${this.password}/TopTopics`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+        })
+      .then((response) => response.json())
+      .then((re_data) => {
+        console.log(re_data);
+        this.TopTopics=re_data;
 
-			// 	return response.json()
-			// }).then(function(rdata) {
-      //           console.log("FOUND STATS");
-      //           console.log(rdata);
-      //           this.Tr=rdata;
-      //           console.log(rdata.image_encoded);
-      //           this.Images=rdata.image_encoded; 
-      //           console.log("THIS IMAGE");
-      //           console.log(this.Images);
-  
-			// })
+      })
+      .catch((error) => console.log(error));
 
-      }
-    };
-  </script>
+      })
+      .catch((error) => console.log(error));
+
+
+
+
+
+      })
+      .catch((error) => console.log(error));
+
+    
+
+
+  },
+  mounted(){
+    console.log("Mounting");
+
+    if(this.Category == "Junior")
+    {
+      this.isJunior = true;
+    }  
+    console.log(this.Junior);
+    console.log(this.Category);
+  },
+  methods:{
+    async MyAccount(){
+    console.log("Going to My Account Page");
+    this.$router.push("/MyAccount");    
+  },
+  async Dashboard()
+       {
+           this.$router.push("/Dashboard");
+       },
+  async MyAssesments()
+  {
+    this.$router.push("/Dashboard/MyAssesments");  
+  },
+  async Assesments()
+  {
+    this.$router.push("/Dashboard/Assesments");  
+  }
+  ,
+  async Logout(){
+    console.log("Logging out");
+    sessionStorage.removeItem("user_id")
+    sessionStorage.removeItem("Name")
+        sessionStorage.removeItem("Category",this.Category);
+        sessionStorage.removeItem("password",this.password);
+        sessionStorage.removeItem("email",this.email);
+    this.$router.push("/");    
+  }
+  }
+};
+</script>
+<style>
+
+table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    th, td {
+      border: none;
+      padding: 8px;
+      text-align: center;
+    }
+
+button {
+  background: none!important;
+  border: none;
+  padding: 0!important;
+  /*optional*/
+  font-family: arial, sans-serif;
+  /*input has OS specific font-family*/
+  color: #069;
+  text-decoration: underline;
+  cursor: pointer;
+}
+</style>

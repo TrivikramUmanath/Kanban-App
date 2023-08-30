@@ -1,10 +1,9 @@
 <template>
   <div class="Login">
-<input type="email" v-model="email" name="email" placeholder="Email" />
+<input type="email" v-model="email" name="email" placeholder="email" />
 <br>
 </br>
-<!-- <p>Message is: {{ message }}</p> -->
-<input type="password" name="password"  v-model="password" placeholder="Password" />
+<input type="password" name="password"  v-model="password" placeholder="password" />
 <br>
 </br>
     <button @click=login>Login</button>
@@ -19,7 +18,9 @@ export default {
         return {
             email: '',
             password: '',
-            first_name:'',
+            user_id:'',
+            Name:'',
+            Category:''
         }
     },
     methods : {
@@ -29,60 +30,32 @@ export default {
                 "email": this.email,
                 "password": this.password
             }
-			// body...
       console.log("FIRST NAME");
-			
-			fetch(
-				"http://localhost:8000/login",
-				{
-				method: "POST",
-				body: JSON.stringify(data),
-				headers:{
-					"Content-Type":"application/json",
-				},
-				
-
-				}
-			).then(function(response) {
-				return response.json()
-			}).then(function(rdata) {
-				localStorage.setItem("token", rdata["response"]["user"]["authentication_token"]);
-        console.log("User id");
-        console.log(rdata["response"]["user"]["id"]);
-        let t= data["email"].split("@")[0]
-        localStorage.setItem("First_Name",t);
-        localStorage.setItem("id",rdata["response"]["user"]["id"]);
-        sessionStorage.setItem("id",rdata["response"]["user"]["id"]); 
-                  console.log(rdata["response"]["user"]["authentication_token"]);
-  
-			})
-            this.$router.push('/Dashboard');
-				
-
-		}
+      return fetch(`http://localhost:8000/api/${this.email}/${this.password}/Login`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+        })
+      .then((response) => response.json())
+      .then((re_data) => {
+        this.user_id = re_data["user_id"];
+        this.Name=re_data["Name"];
+        this.Category=re_data["Category"];
+        console.log(re_data);
+        sessionStorage.setItem("user_id",this.user_id);
+        sessionStorage.setItem("Name",this.Name);
+        sessionStorage.setItem("Category",this.Category);
+        sessionStorage.setItem("password",this.password);
+        sessionStorage.setItem("email",this.email);
+        this.$router.push("/Dashboard"); 
+      })
+      .catch((error) => console.log(error));
+    }
     }
 
 }
 </script>
-<!-- 
-<script>
-export default {
-  name: "Login",
-  props: {
-    msg: String,
-  },
-  mounted() {
-    fetch("http://127.0.0.1:8000/login?include_auth_token")
-    .then(response => response.json())
-    .then(data => {
-      this.msg = data["msg"];
-    });
-  console.log(this.msg);
-  }
-};
-</script> -->
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 h3 {
   margin: 40px 0 0;

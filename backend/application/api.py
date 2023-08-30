@@ -1,126 +1,282 @@
-
-from flask_restful import Resource, Api
-from flask_restful import fields, marshal_with,reqparse
-from flask_restful import reqparse
-from application.validation import BusinessValidationError, NotFoundError
-from application.models import List,User,Card
+from flask_restful import Resource,fields,marshal_with,reqparse
 from application.database import db
-from flask import current_app as app
-import werkzeug
-from application import tasks
-from flask import abort
-from flask_security import auth_required, login_required, roles_accepted, roles_required, auth_token_required
+from application.models import User,Assesment,Thread,Post,Connection,Message,Aspirant
+from application.validation import NotFoundError,BusinessValidationError
+from datetime import datetime
+import pytz
+from sqlalchemy import func
 
-User_output_fields={
-    'id':fields.Integer,
+user_output_fields={
+    'user_id':fields.Integer,
     "Name":fields.String,
     "email":fields.String,
     "password":fields.String,
-    "fs_uniquifier":fields.String,
-    "active":fields.String
+    "Category":fields.String
 }
 
-List_output_fields={
-    'User_Id':fields.Integer,
-    'List_Id':fields.Integer,
-    "Name":fields.String,
-    "Description":fields.String
+
+
+assesment_output_fields={
+    'creator_id':fields.Integer,
+    'assesment_id':fields.Integer,
+    'Student_Count':fields.Integer,
+    'Quiz':fields.String,
+    'Toppers':fields.String,
+    'Name':fields.String
 }
 
-Card_output_fields={
-    'List_Id':fields.Integer,
-    'Card_Id':fields.Integer,
-    'Deadline':fields.String,
-    "Content":fields.String,
-    "Status":fields.String,
-    "Title":fields.String
+aspirant_output_fields={
+    'aspirant_id':fields.Integer,
+    'assesment_id':fields.Integer,
+    'aspirant_score':fields.Integer,
+    'aspirant_name':fields.String
 }
+
+thread_output_fields={
+    'user_id':fields.Integer,
+    'thread_id':fields.Integer,
+    'Thread_count':fields.Integer,
+    'Thread_Map':fields.String,
+    'Title':fields.String
+}
+
+post_output_fields={
+    'thread_id':fields.Integer,
+    'post_id':fields.Integer,
+    'Post_Message':fields.String,
+    'Annoynmous':fields.String,
+    'Post_Date_Time':fields.String,
+    'Poster_Name': fields.String,
+    'Poster_email': fields.String
+}
+
+connection_output_fields={
+    'sender_id':fields.Integer,
+    'receiver_id':fields.Integer,
+    'connection_id':fields.Integer,
+    'Approval_Status':fields.String,
+    'Connection_Map':fields.String,
+    'Sender_Name': fields.String,
+    'Receiver_Name': fields.String,
+    "Request": fields.String
+}
+
+message_output_fields={
+    'connection_id':fields.Integer,
+    'message_id':fields.Integer,
+    'Content':fields.String,
+    "Message_Date_Time":fields.String,
+    "Message_Sender":fields.String
+}
+
 
 create_user_parser=reqparse.RequestParser()
-create_user_parser.add_argument('id')
+create_user_parser.add_argument('user_id')
 create_user_parser.add_argument('password')
 create_user_parser.add_argument('email')
-create_user_parser.add_argument('fs_uniquifier')
 create_user_parser.add_argument('Name')
-create_user_parser.add_argument('active')
+create_user_parser.add_argument('Category')
 
 update_user_parser=reqparse.RequestParser()
 update_user_parser.add_argument('id')
 update_user_parser.add_argument('password')
 update_user_parser.add_argument('email')
-# update_user_parser.add_argument('SecretKey')
 update_user_parser.add_argument('Name')
-
-create_list_parser=reqparse.RequestParser()
-create_list_parser.add_argument('List_Id')
-create_list_parser.add_argument('User_Id')
-create_list_parser.add_argument('Description')
-create_list_parser.add_argument('Name')
-
-update_list_parser=reqparse.RequestParser()
-update_list_parser.add_argument('List_Id')
-update_list_parser.add_argument('User_Id')
-update_list_parser.add_argument('Name')
-update_list_parser.add_argument('Description')
-
-create_card_parser=reqparse.RequestParser()
-create_card_parser.add_argument('List_Id')
-create_card_parser.add_argument('Card_Id')
-create_card_parser.add_argument('Title')
-create_card_parser.add_argument('Content')
-create_card_parser.add_argument('Deadline')
-create_card_parser.add_argument('Status')
-
-update_card_parser=reqparse.RequestParser()
-update_card_parser.add_argument('List_Id')
-update_card_parser.add_argument('Card_Id')
-update_card_parser.add_argument('Title')
-update_card_parser.add_argument('Content')
-update_card_parser.add_argument('Deadline')
-update_card_parser.add_argument('Status')
+update_user_parser.add_argument('Category')
 
 
-test_api_resource_fields = {
-    'msg':    fields.String,
-}
+create_assesment_parser=reqparse.RequestParser()
+create_assesment_parser.add_argument('creator_id')
+create_assesment_parser.add_argument('assesment_id')
+create_assesment_parser.add_argument('Student_count')
+create_assesment_parser.add_argument('Quiz')
+create_assesment_parser.add_argument('Toppers')
+create_assesment_parser.add_argument('Name')
+
+
+update_assesment_parser=reqparse.RequestParser()
+update_assesment_parser.add_argument('creator_id')
+update_assesment_parser.add_argument('assesment_id')
+update_assesment_parser.add_argument('Student_Count')
+update_assesment_parser.add_argument('Quiz')
+update_assesment_parser.add_argument('Toppers')
+update_assesment_parser.add_argument('Name')
+
+
+create_aspirant_parser=reqparse.RequestParser()
+create_aspirant_parser.add_argument('assesment_id')
+create_aspirant_parser.add_argument('aspirant_id')
+create_aspirant_parser.add_argument('aspirant_score')
+create_aspirant_parser.add_argument('aspirant_name')
+
+update_aspirant_parser=reqparse.RequestParser()
+update_aspirant_parser.add_argument('assesment_id')
+update_aspirant_parser.add_argument('aspirant_id')
+update_aspirant_parser.add_argument('aspirant_score')
+update_aspirant_parser.add_argument('aspirant_name')
+
+create_thread_parser=reqparse.RequestParser()
+create_thread_parser.add_argument('user_id')
+create_thread_parser.add_argument('thread_id')
+create_thread_parser.add_argument('Thread_count')
+create_thread_parser.add_argument('Title')
+create_thread_parser.add_argument('Thread_Map')
+
+
+update_thread_parser=reqparse.RequestParser()
+update_thread_parser.add_argument('user_id')
+update_thread_parser.add_argument('thread_id')
+update_thread_parser.add_argument('Thread_count')
+update_thread_parser.add_argument('Title')
+update_thread_parser.add_argument('Thread_Map')
+
+
+create_post_parser=reqparse.RequestParser()
+create_post_parser.add_argument('post_id')
+create_post_parser.add_argument('thread_id')
+create_post_parser.add_argument('Post_Message')
+create_post_parser.add_argument('Annoynmous')
+create_post_parser.add_argument("Post_Date_Time")
+create_post_parser.add_argument("Poster_email")
+create_post_parser.add_argument("Poster_Name")
+
+
+update_post_parser=reqparse.RequestParser()
+update_post_parser.add_argument('post_id')
+update_post_parser.add_argument('thread_id')
+update_post_parser.add_argument('Post_Message')
+update_post_parser.add_argument('Annoynmous')
+update_post_parser.add_argument("Post_Date_Time")
+update_post_parser.add_argument("Poster_email")
+update_post_parser.add_argument("Poster_Name")
+
+create_connection_parser=reqparse.RequestParser()
+create_connection_parser.add_argument('sender_id')
+create_connection_parser.add_argument('receiver_id')
+create_connection_parser.add_argument('Sender_Name')
+create_connection_parser.add_argument('Receiver_Name')
+create_connection_parser.add_argument('connection_id')
+create_connection_parser.add_argument('Connection_Map')
+create_connection_parser.add_argument('Approval_Status')
+create_connection_parser.add_argument('Request')
+
+
+update_connection_parser=reqparse.RequestParser()
+update_connection_parser.add_argument('sender_id')
+update_connection_parser.add_argument('receiver_id')
+update_connection_parser.add_argument('connection_id')
+update_connection_parser.add_argument('Connection_Map')
+update_connection_parser.add_argument('Approval_Status')
+update_connection_parser.add_argument('Sender_Name')
+update_connection_parser.add_argument('Receiver_Name')
+update_connection_parser.add_argument('Request')
+
+
+create_message_parser=reqparse.RequestParser()
+create_message_parser.add_argument('connection_id')
+create_message_parser.add_argument('message_id')
+create_message_parser.add_argument('Content')
+create_message_parser.add_argument('Message_Date_Time')
+create_message_parser.add_argument('Message_Sender')
+
+update_message_parser=reqparse.RequestParser()
+update_message_parser.add_argument('connection_id')
+update_message_parser.add_argument('message_id')
+update_message_parser.add_argument('Content')
+update_message_parser.add_argument('Message_Date_Time')
+update_message_parser.add_argument('Message_Sender')
+
+
+class TopAssesmentsAPI(Resource):
+    @marshal_with(assesment_output_fields)
+    def get(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            assesment=db.session.query(Assesment).filter().order_by(Assesment.Student_Count.desc()).limit(3).all()
+            if assesment:
+                return assesment
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+            
+            
+class TopPostAPI(Resource):
+    @marshal_with(post_output_fields)
+    def get(self,user_id,password):
+        print("INSIDE Posts")
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            posts=db.session.query(Post).all()
+            post1 =db.session.query(Post.Poster_Name,func.count(Post.Poster_Name)).group_by(Post.Poster_Name).all()
+            sorted_data = sorted(post1, key=lambda x: x[1], reverse=True)
+            top3_counts = sorted_data[:3]
+            FinalPost=[]
+            for i in top3_counts:
+                temp=db.session.query(Post).filter(Post.Poster_Name==i[0]).first()
+                FinalPost.append(temp)
+            print(FinalPost)
+            return FinalPost
+        else:
+            raise NotFoundError(status_code=404)
+                
+                
+class TopThreadsAPI(Resource):
+    @marshal_with(thread_output_fields)
+    def get(self,user_id,password):
+        print("INSIDE THREADS")
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            thread=Thread.query.order_by(Thread.Thread_count.desc()).limit(3).all()
+            print(thread)
+            if thread:
+                return thread
+            else:
+                raise NotFoundError(status_code=404)
+
 
 
 
 
 class UserAPI(Resource):
-    @marshal_with(User_output_fields)
-    @auth_required("token")
-    def get(self,User_Id,password):
-        id=int(User_Id)
-        user=db.session.query(User).filter(User.id==id,User.password==password).first()
+    @marshal_with(user_output_fields)
+    def get(self,email_id,password):
+        print('Hello')
+        print(email_id)
+        print(password)
+        user=db.session.query(User).filter(User.email==email_id,User.password==password).first()
         print(user)
-    
         if user:
             return user
         else:
             raise NotFoundError(status_code=404)
 
-    def put(self,User_Id,password):
-        id=int(User_Id)
+    @marshal_with(user_output_fields)
+    def put(self,user_id,password):
+        id=int(user_id)
         args=update_user_parser.parse_args()
         passw=args.get('password',None)
         em=args.get("email",None)
-        # key=args.get('SecretKey',None)
         nam=args.get('Name',None)
-        user=db.session.query(User).filter(User.User_Id==id,User.password==password).first()
+        cat=args.get("Category",None)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
         print(user)
         if user:
             user.Name=nam
             user.email=em
             user.password=passw
+            user.Category=cat
             db.session.commit()
             return user
         else:
             raise NotFoundError(status_code=404)
 
-    def delete(self,User_Id,password):
-        id=int(User_Id)
-        user=db.session.query(User).filter(User.User_Id==id,User.password==password).first()
+    def delete(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
         print(user)
         if user:
             db.session.delete(user)
@@ -128,234 +284,707 @@ class UserAPI(Resource):
             return {},201
         else:
             raise NotFoundError(status_code=404)
-
-    @auth_required("token")
+        
     def post(self):
+        print("INSIDE")
         args=create_user_parser.parse_args()
-        print(args)
-        user_id=args.get("User_Id",None)
-        password=args.get("password",None)
+        print("IN API.")
+        password=args.get('password',None)
         em=args.get("email",None)
         nam=args.get('Name',None)
-        print("User id")
-        print(user_id)
-        print("password")
-        print(password)
-        if user_id is None or password is None:
-            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
-        else:
-            pass
-        user=db.session.query(User).filter(User.User_Id==int(user_id)).first()
-        if user:
-            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
-        new_user=User(User_Id=int(user_id),password=password,Name=nam,email=em)
+        cat=args.get("Category",None)
+        print("Password"+password)
+        print("email "+em)
+        print("name"+nam)
+        new_user=User(password=password,Name=nam,email=em,Category=cat)
+        print(new_user)
         db.session.add(new_user)
         db.session.commit()
         return {},201
 
 
-
-class ListAPI(Resource):
-    @marshal_with(List_output_fields)
-    @auth_required("token")
-    def get(self,User_Id):
-        id=int(User_Id)
-        user=db.session.query(User).filter(User.id==id).first()
-        NewL={}
+class AllThreadsAPI(Resource):
+    @marshal_with(thread_output_fields)
+    def get(self,user_id,password):
+        print("INSIDE THREADS")
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
         if user:
-            list=db.session.query(List).filter(List.User_Id==id).all()
-            print(type(list))
-            AllCards={}
-            print(type(NewL))
-            for l in list:
-                NewL[l.List_Id]={}
-                NewL[l.List_Id]["List"]=l
-                NewL[l.List_Id]["Cards"]=db.session.query(Card).filter(Card.List_Id==l.List_Id).all()
-            # list.append(NewL)
-            print("Modified list")
-            print(NewL)
-            if list:
-                print("Found List")
-                return list
+            thread=Thread.query.order_by(Thread.Thread_Map.desc()).all()
+            print(thread)
+            if thread:
+                return thread
+            else:
+                raise NotFoundError(status_code=404)
+
+class AllThreadsUserAPI(Resource):
+    @marshal_with(thread_output_fields)
+    def get(self,user_id,password):
+        print("INSIDE THREADS")
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            thread=Thread.query.filter(Thread.user_id==id).order_by(Thread.Thread_Map.desc()).all()
+            print(thread)
+            if thread:
+                return thread
+            else:
+                raise NotFoundError(status_code=404)
+
+class AllPostAPI(Resource):
+    @marshal_with(post_output_fields)
+    def get(self,user_id,password,thread_id):
+        print("INSIDE THREADS")
+        id=int(user_id)
+        id2=int(thread_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+
+        if user:
+            thread=db.session.query(Thread).filter(Thread.thread_id==id2).first()
+            print(thread)
+            if thread:
+                posts=db.session.query(Post).filter(Post.thread_id==id2).order_by(Post.Post_Date_Time.asc()).all()
+                return posts
+            else:
+                raise NotFoundError(status_code=404)
+            
+class AllMessageAPI(Resource):
+    @marshal_with(message_output_fields)
+    def get(self,user_id,password,connection_id):
+        print("INSIDE CONNECTIONS")
+        id=int(user_id)
+        id2=int(connection_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+
+        if user:
+            con=db.session.query(Connection).filter(Connection.connection_id==id2).first()
+            print(con)
+            if con:
+                sms=db.session.query(Message).filter(Message.connection_id==id2).order_by(Message.Message_Date_Time.asc()).all()
+                return sms
+            else:
+                raise NotFoundError(status_code=404)
+            
+class AllAssesmentsUserAPI(Resource):
+    @marshal_with(assesment_output_fields)
+    def get(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            assesment=db.session.query(Assesment).filter(Assesment.creator_id==id).all()
+            if assesment:
+                return assesment
             else:
                 raise NotFoundError(status_code=404)
         else:
             raise NotFoundError(status_code=404)
 
-    @auth_required("token")
-    def put(self,User_Id,List_Id):
-        id=int(User_Id)
-        id2=int(List_Id)
-        args=update_list_parser.parse_args()
-        name=args.get('Name',None)
-        description = args.get("Description")
-        list=db.session.query(List).filter(List.User_Id==id,List.List_Id==id2).first()
-        list.Name=name
-        list.Description=description
-        db.session.commit()
-        return {},201
-        
-    @auth_required("token")
-    def delete(self,User_Id,List_Id):
-        id=int(User_Id)
-        id2=int(List_Id)
-        list1=db.session.query(List).filter(List.User_Id==id,List.List_Id==id2).first()
-        db.session.delete(list1)
-        db.session.commit()
-        return {},201
-
-    @auth_required("token")
-    def post(self,User_Id):
-        id=int(User_Id)
-        args=create_list_parser.parse_args() 
-        Nam=args.get('Name',None)
-        Descriptio=args.get('Description',None)
-        print("DESC")
-        print(Descriptio)
-        new_list=List(Name=Nam,User_Id=id,Description=Descriptio)
-        db.session.add(new_list)
-        db.session.commit()
-        return {},201
-        # if id is None or password is None:
-        #     raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
-        # else:
-        #     pass
-        # user=db.session.query(User).filter(User.User_Id==int(id)).first()
-        # if user:
-        #     raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
-
-
-class OneListAPI(Resource):
-    @marshal_with(List_output_fields)
-    @auth_required("token")
-    def get(self,User_Id,Name):
-        id=int(User_Id)
-        name=Name.replace("%20", " ")
-        name=name[1:-1]
-        print(name)
-        list=db.session.query(List).filter(List.User_Id==id,List.Name==name).first()
-        print(list)
-        return list
-
-class CardAPI(Resource):
-    @marshal_with(Card_output_fields)
-    @auth_required("token")
-    def get(self,List_Id):
-            id2=int(List_Id)
-            card=db.session.query(Card).filter(Card.List_Id==id2).all()
-            if card:
-                print(card)
-                return card
-            else:
-                print("Nothing")
-                # raise NotFoundError(status_code=404)
-            # else:
-            #     raise NotFoundError(status_code=404)        
-        # else:
-        #     raise NotFoundError(status_code=404)
-    @auth_required("token") 
-    def put(self,User_Id,Card_Id):
-        id=int(User_Id)
-        id2=int(Card_Id)
-        args=update_card_parser.parse_args()
-        Content=args.get('Content',None)
-        Deadline=args.get("Deadline",None)
-        Status=args.get('Status',None)
-        Title = args.get('Title',None)
-        List_id = args.get('List_Id',None)
-        print(List_id)
-        card=db.session.query(Card).filter(Card.Card_Id==id2).first()
-        if card:
-            # if Content is not None:
-            card.Content = Content
-            # if Deadline is not None:
-            card.Deadline = Deadline
-            # if Status is not None:
-                # card.Status=Status
-            card.Status = Status
-            # if Title is not None:
-            card.Title = Title
-            # if List_id is not None:
-            card.List_Id = List_id
-        db.session.commit()
-        return {},201
-        # else:
-        #     raise NotFoundError(status_code=404)
-    @auth_required("token") 
-    def delete(self,User_Id,Card_Id):
-        id3=int(Card_Id)
-        id=int(User_Id)
-        card=db.session.query(Card).filter(Card.Card_Id==id3).first()
-        db.session.delete(card)
-        db.session.commit()
-        return {},201
-        #         else:
-        #             raise NotFoundError(status_code=404)
-        #     else:
-        #         raise NotFoundError(status_code=404)        
-        # else:
-        #     raise NotFoundError(status_code=404)
-
-    @auth_required("token")     
-    def post(self,User_Id,List_Id):
-        e=int(User_Id)
-        id1=int(List_Id)
-        args=create_card_parser.parse_args()
-        content=args.get('Content',None)
-        deadline=args.get("Deadline",None)
-        status=args.get('Status',None)
-        Titl = args.get('Title',None)
-        new_card=Card(Title=Titl,Content=content,Deadline=deadline,Status=status,List_Id =id1)
-        db.session.add(new_card)
-        db.session.commit()
-        return {},201
-        #     else:
-        #         raise BusinessValidationError(status_code=400,error_code="BE1003",error_message="List_Id is invalid")
-        # if id is None or password is None:
-        #     raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
-        # else:
-        #     pass
-        # user=db.session.query(User).filter(User.User_Id==int(id)).first()
-        # if user:
-        #     raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
-
-
-
-
-class OneCardAPI(Resource):
-    @marshal_with(Card_output_fields)
-    @auth_required("token")
-    def get(self,User_Id,Title):
-        print("INSIDE ONECARD API")
-        id=int(User_Id)
-        title=Title.replace("%20", " ")
-        title=title[1:-1]
-        print(title)
-        card=db.session.query(Card).filter(Card.Title==title).first()
-        print(card)
-        return card
-
-
-
-class SendImage_Logs(Resource):        
-    def get(self,User_Id,password,List_Id):
-        id=int(User_Id)
-        id1=int(List_Id)
-        user=db.session.query(User).filter(User.User_Id==id,User.password==password).first()
+class AllAssesmentsAPI(Resource):
+    @marshal_with(assesment_output_fields)
+    def get(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
         if user:
-            tracker=db.session.query(List).filter(List.User_Id==id,List.List_Id==id1).first()
-            print('jh')
-            if tracker:
-                q='192.168.1.19:8080/Dashboard/'+str(id)+'/'+str(id1)+'/Visualize'
-                return {'link':q}
+            assesment=db.session.query(Assesment).filter().all()
+            unattemped=[]
+            attempted=[]
+            if assesment:
+                # for i in assesment:
+                #     aspirant=db.session.query(Aspirant).filter(Aspirant.aspirant_id==id,Aspirant.assesment_id==i.assesment_id)
+                #     if aspirant:
+                #         attempted.append(aspirant)
+                #     else:
+                #         unattemped.append(aspirant)
+                # print("Attembed")
+                # print(attempted)
+                # print("Unattempted")
+                # print(unattemped)
+                return assesment
+            else:
+                raise NotFoundError(status_code=404)
         else:
-            return "Image sending failed"
+            raise NotFoundError(status_code=404)
 
-# @app.route("/")
-# @app.route("/Dashboard/<String:User_Id>/Export_User", methods=["GET", "POST"])
-# def hello():
 
-#     job = tasks.export_user.apply_async(countdown =10,expires =120)
-#     # job = tasks.print_current_time_job.apply_async(eta=now+timedelta(seconds=10))
-#     result = job.wait()
-#     return str(result), 200
+class AllAspirantsUsersAPI(Resource):
+    @marshal_with(aspirant_output_fields)
+    def get(self,user_id,password):
+        print("IN aspirant")
+        id=int(user_id)
+        print(id)
+        print(password)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            aspirants=db.session.query(Aspirant).filter(Aspirant.aspirant_id==id).all()
+            print("Aspirant is")
+            print(aspirants)
+            if aspirants:
+                return aspirants
+            else:
+                return {},200
+        else:
+            raise NotFoundError(status_code=404)
+
+
+class AssesmentAPI(Resource):
+    @marshal_with(assesment_output_fields)
+    def get(self,user_id,password,assesment_id):
+        id=int(user_id)
+        id2=int(assesment_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            assesment=db.session.query(Assesment).filter(Assesment.assesment_id==id2).all()
+            if assesment:
+                return assesment
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+    def put(self,user_id,password,assesment_id):
+        id=int(user_id)
+        id2=int(assesment_id)
+        args=create_assesment_parser.parse_args()
+        Name=args.get('Name',None)
+        Descr=args.get("Quiz",None)
+        count=args.get("Student_count",None)
+        top=args.get("Toppers",None)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Assesment).filter(Assesment.creator_id==id,Assesment.assesment_id==id2).first()
+            if tracker:
+                tracker.Name=Name
+                tracker.Quiz=Descr
+                tracker.Student_count=count
+                tracker.Toppers=top
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)         
+        else:
+            raise NotFoundError(status_code=404)
+
+    def delete(self,user_id,password,assesment_id):
+        id=int(user_id)
+        id2=int(assesment_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Assesment).filter(Assesment.assesment_id==id2).first()
+            print(tracker)
+            if tracker:
+                db.session.delete(tracker)
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)
+
+        else:
+            raise NotFoundError(status_code=404)
+
+    def post(self,user_id,password):
+        id=int(user_id)
+        print('tri')
+        args=create_assesment_parser.parse_args()
+        Descr=args.get("Quiz",None)  
+        print("Quiz is")
+        print(Descr)
+        print(type(Descr))
+        Nam=args.get('Name',None)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            new_tracker=Assesment(Name=Nam,Quiz=Descr,creator_id=id,Student_Count =0)
+            db.session.add(new_tracker)
+            db.session.commit()
+            return {},200
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+
+
+
+class AspirantAPI(Resource):
+    @marshal_with(aspirant_output_fields)
+    def get(self,user_id,password,assesment_id):
+        id=int(user_id)
+        id2=int(assesment_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            aspirant=db.session.query(Aspirant).filter(Aspirant.assesment_id==id2).order_by(Aspirant.aspirant_score.desc()).all()
+            if aspirant:
+                return aspirant
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+    def put(self,user_id,password,assesment_id):
+        id=int(user_id)
+        args=update_aspirant_parser.parse_args()
+        id2=int(assesment_id)
+        score=args.get('aspirant_score')
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Aspirant).filter(Aspirant.aspirant_id==id,Aspirant.assesment_id==id2).first()
+            if tracker:
+                tracker.aspirant_score=score
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)         
+        else:
+            raise NotFoundError(status_code=404)
+
+    def delete(self,user_id,password,assesment_id):
+        id=int(user_id)
+        id2=int(assesment_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Aspirant).filter(Aspirant.aspirant_id==id,Aspirant.assesment_id==id2).first()
+            if tracker:
+                db.session.delete(tracker)
+                db.session.commit()
+                asses=db.session.query(Assesment).filter(Assesment.assesment_id==id2).first()
+                asses.Student_Count = asses.Student_Count-1
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+    def post(self,user_id,password,assesment_id):
+        id=int(user_id)
+        print('tri')
+        args=create_aspirant_parser.parse_args()
+        score=args.get("aspirant_score")
+        na=args.get("aspirant_name")
+        print(score)
+        id2=int(assesment_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            new_tracker=Aspirant(aspirant_id=id,assesment_id=id2,aspirant_score=score,aspirant_name=na)
+            db.session.add(new_tracker)
+            db.session.commit()
+            asses=db.session.query(Assesment).filter(Assesment.assesment_id==id2).first()
+            asses.Student_Count = asses.Student_Count+1
+            db.session.commit()
+            return {},201
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+
+class ThreadAPI(Resource):
+    @marshal_with(thread_output_fields)
+    def get(self,user_id,password,thread_id):
+        id=int(user_id)
+        id2=int(thread_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Thread).filter(Thread.thread_id==id2).first()
+            if tracker:
+                return tracker
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+    def put(self,user_id,password,thread_id):
+        id=int(user_id)
+        id2=int(thread_id)
+        args=update_thread_parser.parse_args()
+        Descr=args.get("Thread_count",None)
+        Seet=args.get('Thread_Map',None)    
+        Nam=args.get('Title',None)
+
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Thread).filter(Thread.user_id==id,Thread.thread_id==id2).first()
+            if tracker:
+                tracker.Title=Nam
+                tracker.Thread_count=Descr
+                tracker.Thread_Map=Seet
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)         
+        else:
+            raise NotFoundError(status_code=404)
+
+    def delete(self,user_id,password,thread_id):
+        id=int(user_id)
+        id2=int(thread_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Thread).filter(Thread.user_id==id,Thread.thread_id==id2).first()
+            if tracker:
+                db.session.delete(tracker)
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)
+
+        else:
+            raise NotFoundError(status_code=404)
+
+    def post(self,user_id,password):
+        print("Inside post")
+        id=int(user_id)
+        print('tri')
+        args=create_thread_parser.parse_args()
+        Descr=0
+        Seet=args.get('Thread_Map',None)    
+        Nam=args.get('Title',None)
+        print(id)
+        print(password)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        
+        if user:
+            new_thread=Thread(Thread_count=Descr,Thread_Map=Seet,user_id=id,Title=Nam)
+            db.session.add(new_thread)
+            db.session.commit()
+            return {"thread_id":new_thread.thread_id,"status_code":200}
+        
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+
+
+class PostAPI(Resource):
+     @marshal_with(post_output_fields)
+     def get(self,user_id,password,thread_id,post_id):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            id2=int(thread_id)
+            tracker=db.session.query(Thread).filter(Thread.user_id==id,Thread.thread_id==id2).first()
+            if tracker:
+                id3=int(post_id)
+                logger=db.session.query(Post).filter(Post.post_id==id3,Post.thread_id==id2).first()
+                if logger:
+                    return logger
+                else:
+                    raise NotFoundError(status_code=404)
+            else:
+                raise NotFoundError(status_code=404)        
+        else:
+            raise NotFoundError(status_code=404)
+
+     def put(self,user_id,password,thread_id,post_id):
+        print("Inside logs")
+        id=int(user_id)
+        id1=int(thread_id)
+        args=update_post_parser.parse_args()
+        id2=int(post_id)
+        print(id2)
+        timeSt=args.get('Annoynmous',"False")
+        note=args.get('Post_Message',None)    
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Thread).filter(Thread.user_id==id,Thread.thread_id==id1).first()
+            if tracker:
+
+                logger=db.session.query(Post).filter(Post.post_id==id2,Post.thread_id==id1).first()
+                if logger:
+                    logger.Annoynmous=timeSt
+                    logger.Post_Message=note
+                    india_timezone = pytz.timezone('Asia/Kolkata')
+                    current_time_in_india = datetime.now(india_timezone)
+                    logger.Post_Date_Time=current_time_in_india
+                    db.session.commit()
+                    tracker.Thread_Map=current_time_in_india
+                    db.session.commit()
+            return {},201
+        else:
+            raise NotFoundError(status_code=404)
+
+     def delete(self,user_id,password,thread_id,post_id):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            id2=int(thread_id)
+            tracker=db.session.query(Thread).filter(Thread.thread_id==id2).first()
+            if tracker:
+                id3=int(post_id)
+                logger=db.session.query(Post).filter(Post.post_id==id3).first()
+                if logger:
+                    db.session.delete(logger)
+                    db.session.commit()
+                    return {},201
+                else:
+                    raise NotFoundError(status_code=404)
+            else:
+                raise NotFoundError(status_code=404)        
+        else:
+            raise NotFoundError(status_code=404)
+
+     def post(self,user_id,password,thread_id):
+        print("Inside logs")
+        id=int(user_id)
+        id1=int(thread_id)
+        args=create_post_parser.parse_args()
+        timeSt=args.get('Annoynmous',"False")
+        note=args.get('Post_Message',None)    
+        email=args.get('Poster_email')
+        nam=args.get('Poster_Name')
+
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Thread).filter(Thread.thread_id==id1).first()
+            if tracker:
+                india_timezone = pytz.timezone('Asia/Kolkata')
+                current_time_in_india = datetime.now(india_timezone)
+                new_logger=Post(Annoynmous=timeSt,Post_Message=note,thread_id =id1,Post_Date_Time=current_time_in_india,Poster_Name=nam,Poster_email=email)
+                db.session.add(new_logger)
+                db.session.commit()
+                tracker.Thread_Map=current_time_in_india
+                if tracker.Thread_count is None:
+                    tracker.Thread_count=1
+                else:
+                    tracker.Thread_count=int(tracker.Thread_count)+1
+                db.session.commit()
+                return {"message":"su","status_code":200}
+            else:
+                raise BusinessValidationError(status_code=400,error_code="BE1003",error_message="Tracker_Id is invalid")
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+
+
+class AllConnectionAPI(Resource):
+    @marshal_with(connection_output_fields)
+    def get(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker1=db.session.query(Connection).filter(Connection.receiver_id==id).all()
+            if tracker1:
+                return tracker1
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+class AllUsersAPI(Resource):
+    @marshal_with(user_output_fields)
+    def get(self,user_id,password):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        users=db.session.query(User).filter(User.user_id!=id).all()
+        if users:
+            return users
+        else:
+            raise NotFoundError(status_code=404)
+
+class ConnectionAPI(Resource):
+    @marshal_with(connection_output_fields)
+    def get(self,user_id,password,connection_id):
+        id=int(user_id)
+        id2=int(connection_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Connection).filter(Connection.sender_id==id,Connection.connection_id==id2).first()
+            tracker1=db.session.query(Connection).filter(Connection.receiver_id==id,Connection.connection_id==id2).first()
+            if tracker:
+                return tracker
+            elif tracker1:
+                return tracker1
+            else:
+                raise NotFoundError(status_code=404)
+        else:
+            raise NotFoundError(status_code=404)
+
+    def put(self,user_id,password,connection_id):
+        id=int(user_id)
+        id2=int(connection_id)
+        args=update_connection_parser.parse_args()
+        Name=args.get('Approval_Status',"Not Responded")
+        # Descr=args.get("Connection_Map",None)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Connection).filter(Connection.sender_id==id,Connection.connection_id==id2).first()
+            tracker1=db.session.query(Connection).filter(Connection.receiver_id==id,Connection.connection_id==id2).first()
+            if tracker:
+                tracker.Approval_Status=Name
+                db.session.commit()
+                return {},200
+            elif tracker1:
+                tracker1.Approval_Status=Name
+                db.session.commit()
+                if Name=="Accept":
+                    print(Name)
+                    content=tracker1.Request
+                    india_timezone = pytz.timezone('Asia/Kolkata')
+                    current_time_in_india = datetime.now(india_timezone)
+                    new_logger=Message(Content=content,connection_id =id2,Message_Sender=user.Name,Message_Date_Time=current_time_in_india)
+                    db.session.add(new_logger)
+                    db.session.commit()
+                    tracker1.Connection_Map = current_time_in_india
+                    db.session.commit()
+                return {},200
+            else:
+                raise NotFoundError(status_code=404)         
+        else:
+            raise NotFoundError(status_code=404)
+
+    def delete(self,user_id,password,connection_id):
+        id=int(user_id)
+        id2=int(connection_id)
+        print(id2)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        print(user)
+        if user:
+            tracker=db.session.query(Connection).filter(Connection.sender_id==id,Connection.connection_id==id2).first()
+            tracker1=db.session.query(Connection).filter(Connection.receiver_id==id,Connection.connection_id==id2).first()
+            print(tracker1)
+            print(tracker)
+            if tracker:
+                db.session.delete(tracker)
+                db.session.commit()
+                return {},201
+            elif tracker1:
+                db.session.delete(tracker1)
+                db.session.commit()
+                return {},201
+            else:
+                raise NotFoundError(status_code=404)
+
+        else:
+            raise NotFoundError(status_code=404)
+
+    def post(self,user_id,password):
+        id=int(user_id)
+        print('tri')
+        args=create_connection_parser.parse_args()
+        receiver_id=int(args.get("receiver_id"))
+        print(receiver_id)
+        Descr=args.get("Request")
+        print("Request Message is ")
+        print(Descr)
+        sender=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        receiver=db.session.query(User).filter(User.user_id==receiver_id).first()
+        if sender and receiver:
+            india_timezone = pytz.timezone('Asia/Kolkata')
+            current_time_in_india = datetime.now(india_timezone)
+            new_tracker=Connection(sender_id=id,receiver_id=receiver_id,Request=Descr,Sender_Name=sender.Name,Receiver_Name=receiver.Name,Connection_Map=current_time_in_india,Approval_Status="Not Responded")
+            db.session.add(new_tracker)
+            db.session.commit()
+            return {},200
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+
+class MessageAPI(Resource):
+    @marshal_with(message_output_fields)
+    def get(self,user_id,password,connection_id,message_id):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            id2=int(connection_id)
+            tracker=db.session.query(Connection).filter(Connection.connection_id==id2).first()
+            if tracker:
+                id3=int(message_id)
+                logger=db.session.query(Message).filter(Message.message_id==id3).first()
+                if logger:
+                    print(logger)
+                    return logger
+                else:
+                    raise NotFoundError(status_code=404)
+            else:
+                raise NotFoundError(status_code=404)        
+        else:
+            raise NotFoundError(status_code=404)
+
+    def put(self,user_id,password,connection_id,message_id):
+        id=int(user_id)
+        id1=int(connection_id)
+        id2=int(message_id)
+        args=update_message_parser.parse_args()
+        timeSt=args.get('Content',None)   
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Connection).filter(Connection.connection_id==id1).first()
+            if tracker:
+                logger=db.session.query(Message).filter(Message.message_id==id2,Message.connection_id==id1).first()
+                if logger:
+                    logger.Content=timeSt
+                    db.session.commit()
+            return {},201
+        else:
+            raise NotFoundError(status_code=404)
+
+    def delete(self,user_id,password,connection_id,message_id):
+        id=int(user_id)
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            id2=int(connection_id)
+            tracker=db.session.query(Connection).filter(Connection.connection_id==id2).first()
+            if tracker:
+                id3=int(message_id)
+                logger=db.session.query(Message).filter(Message.connection_id==id3,Message.message_id==id2).first()
+                if logger:
+                    db.session.delete(logger)
+                    db.session.commit()
+                    return {},201
+                else:
+                    raise NotFoundError(status_code=404)
+            else:
+                raise NotFoundError(status_code=404)        
+        else:
+            raise NotFoundError(status_code=404)
+
+    def post(self,user_id,password,connection_id):
+        print("Inside logs")
+        id=int(user_id)
+        id1=int(connection_id)
+        args=create_message_parser.parse_args()
+        timeSt=args.get('Content',None)
+        sender=args.get('Message_Sender')
+
+        user=db.session.query(User).filter(User.user_id==id,User.password==password).first()
+        if user:
+            tracker=db.session.query(Connection).filter(Connection.connection_id==id1).first()
+            if tracker:
+                india_timezone = pytz.timezone('Asia/Kolkata')
+                current_time_in_india = datetime.now(india_timezone)
+                new_logger=Message(Content=timeSt,connection_id =id1,Message_Sender=sender,Message_Date_Time=current_time_in_india)
+                db.session.add(new_logger)
+                db.session.commit()
+                tracker.Connection_Map=current_time_in_india
+                db.session.commit()
+                return {"message":"su","status_code":200}
+            else:
+                raise BusinessValidationError(status_code=400,error_code="BE1003",error_message="Tracker_Id is invalid")
+        if user_id is None or password is None:
+            raise BusinessValidationError(status_code=400,error_code="BE1001",error_message="user_id or password is required")
+        else:
+            pass
+        user=db.session.query(User).filter(User.user_id==int(user_id)).first()
+        if user:
+            raise BusinessValidationError(status_code=400,error_code="BE1002",error_message="duplicate user_id")
+

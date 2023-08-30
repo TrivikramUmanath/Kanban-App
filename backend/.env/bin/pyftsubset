@@ -1,4 +1,4 @@
-#!/home/trivikram/Desktop/MAD2_Final_Project/backend/.env/bin/python3
+#!/home/trivikram/Desktop/Kanban-App/backend/.env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
