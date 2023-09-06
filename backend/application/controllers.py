@@ -12,7 +12,14 @@ import flask
 import numpy as np
 import json
 import pandas as pd
+from application.workers import celery
+from application import tasks
+import base64
+from flask_security import login_required, roles_accepted, roles_required
 
+        
+
+@login_required
 @app.route("/Dashboard/<string:id>/ExportUser",methods=["GET"])
 def export_user(id):
     print("START")
@@ -41,6 +48,7 @@ def export_user(id):
                 Complete_Data.append(dar)
     print("Complete Data")
     w=json.dumps(Complete_Data)
+    job = tasks.export_user_data.delay(w)
     return "Job Started",200
 
 
@@ -66,7 +74,7 @@ def export_list(id):
             Complete_Data.append(dar)
     print("Complete Data")
     w=json.dumps(Complete_Data)
-
+    job = tasks.export_list_data.delay(w)
     return "Job Started",200
 
 
@@ -88,4 +96,5 @@ def export_card(id):
     Complete_Data.append(dar)
     w=json.dumps(Complete_Data)
     print(w)
+    job = tasks.export_card_data.delay(w)
     return "Job Started",200

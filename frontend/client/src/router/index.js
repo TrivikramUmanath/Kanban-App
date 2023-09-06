@@ -3,17 +3,14 @@ import VueRouter from "vue-router";
 import LoginViewVue from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import DashboardView from "../views/DashboardView.vue";
+import AddListView from "../views/AddListView.vue";
+import EditListView from "../views/EditListView.vue";
+import DeleteListView from "../views/DeleteListView.vue";
+import AddCardView from "../views/AddCardView.vue";
+import DeleteCardView from "../views/DeleteCardView.vue";
+import EditCardView from "../views/EditCardView.vue";
 import SummaryView from "../views/SummaryView.vue"; 
-import MyAccountView from "../views/MyAccountView.vue";
-import ThreadDetailsView from "../views/ThreadDetailsView.vue";
-import AddThreaView from "../views/AddThreadView.vue";
-import MyThreadsView from "../views/MyThreadsView.vue";
-import MessageRecordsView from "../views/MessageRecordsView.vue";
-import MyAssesmentsView from "../views/MyAssesmentsView.vue";
-import AssesmentsView from "../views/AssesmentsView.vue";
-import AttemptQuizView from "../views/AttemptQuizView.vue";
-import ScoreStatsView from "../views/ScoreStatsView.vue";
-import ViewScoreView from "../views/ViewScoreView.vue";
+import HelloWorldView from "../views/HelloWorldView.vue"; 
 
 Vue.use(VueRouter);
 
@@ -34,69 +31,48 @@ const routes = [
     component:DashboardView,
 
   },
-  ,
-
   {
-    path:"/MyAccounts/MessageRecords",
-    name: "MesssageRecords",
-    component:MessageRecordsView ,
+    path:"/Dashboard/AddList",
+    name: "AddList",
+    component:AddListView,
 
   },
-  
+  {
+    path:"/Dashboard/Edit List",
+    name: "EditList",
+    component:EditListView ,
+
+  },
+  {
+    path:"/Dashboard/Delete List",
+    name: "DeleteList",
+    component:DeleteListView ,
+  },
+  {
+    path:"/Dashboard/Add Card",
+    name: "AddCard",
+    component:AddCardView ,
+  },
+  {
+    path:"/Dashboard/Delete Card",
+    name: "DeleteCard",
+    component:DeleteCardView ,
+  },
+  {
+    path:"/Dashboard/Edit Card",
+    name: "EditCard",
+    component:EditCardView ,
+  },
   {
     path:"/Summary",
     name: "Summary",
     component:SummaryView ,
   },
   {
-    path:"/MyAccount",
-    name: "MyAccount",
-    component:MyAccountView ,
-  },
-  {
-    path:"/MyThreads",
-    name: "MyThreads",
-    component:MyThreadsView ,
-  },
-  {
-    path:"/Dashboard/ThreadDetails",
-    name: "ThreadDetails",
-    component:ThreadDetailsView ,
-  },
-  {
-    path:"/Dashboard/AddThread",
-    name: "AddThread",
-    component:AddThreaView ,
+    path:"/Dashboard/Check",
+    name: "Check",
+    component:HelloWorldView,
   }
-  ,
-  {
-    path:"/MyAssesments",
-    name: "MyAssesments",
-    component:MyAssesmentsView,
-  },
-  
-  {
-    path:"/Assesments",
-    name: "Assesments",
-    component:AssesmentsView,
-  },
-  {
-    path:"/Assesment/AttemptQuiz",
-    name: "AttemptQuiz",
-     component: AttemptQuizView,
-  },
-  {
-    path:"/Assesment/ViewScoreStats",
-    name: "ViewScoreStats",
-     component: ScoreStatsView,
-  },
-  {
-    path:"/Assesment/CheckAllScores",
-    name: "CheckAllScores",
-     component: ViewScoreView,
-     
-  }
-
 
 ];
 

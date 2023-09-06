@@ -21,22 +21,6 @@
           <br>
          </br>
 
-         <label for="Name">Name</label>
-          <input type="Name" name="Name" v-model="Name" required>
-
-          <br>
-          </br>
-          <br>
-         </br>
-
-         <label for="Category">Category</label>
-          <input type="Category" name="Category" v-model="Category" required>
-
-          <br>
-          </br>
-          <br>
-         </br>
-
           <center>
               <button type="submit">Register</button>
           </center>
@@ -53,17 +37,14 @@ export default {
 name: "UserRegister",
 data() {
   return {
-    Name:"",
     email: "",
     password: "",
-    Category:"",
-
   };
 },
 methods: {
   async register() {
     try {
-      fetch("http://127.0.0.1:8000/api/user/CreateUser", {
+      fetch("http://127.0.0.1:8000/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json;charset=utf-8",

@@ -5,8 +5,8 @@
       <router-link to="/">Login</router-link> |
       <router-link to="/Register">Register</router-link>
     </nav>
-    <h1>Placement Portal</h1>
-    <img alt="Vue logo" src="../assets/Placement_Logo.jpg" />
+    <h1>Kanban App</h1>
+    <img alt="Vue logo" src="../assets/kanban_logo.jpeg" />
     <Login msg="Kanban App" />
   </div>
   

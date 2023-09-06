@@ -10,15 +10,6 @@
     </nav>
           <form @submit.prevent="register">
 
-            <label for="Name">Name </label>
-            <input type="Name" name="Name" v-model="Name" required>
-
-            <br>
-            </br>
-            <br>
-           </br>
-
-
             <label for="email">Email </label>
             <input type="email" name="email" v-model="email" required>
 
@@ -33,20 +24,7 @@
             </br>
             <br>
            </br>
-           <label for="Category">Category </label>
-       <select required name="category" id="category" v-model="Category">
-      <option value="Junior">Junior</option>
-      <option value="Senior">Senior</option>
-      <option value="POD">POD</option>
-    </select>
-  <br>
-            </br>
-            <br>
-           </br>
-           <br>
-            </br>
-            <br>
-           </br>
+
             <center>
                 <button type="submit">Register</button>
             </center>
@@ -59,43 +37,44 @@
 </template>
 
 <script>
-
 export default {
   name: "UserRegister",
   data() {
     return {
       email: "",
       password: "",
-      Name:"",
-      Category:"",
     };
   },
   methods: {
     async register() {
       try {
-        console.log("Inside REG");
-        fetch("http://localhost:8000/api/user/CreateUser", {
+        fetch("http://127.0.0.1:8000/register", {
           method: "POST",
           headers: {
-            'Access-Control-Allow-Origin': '*',
-       'Content-type': 'application/json',
+            "Content-Type": "application/json;charset=utf-8",
           },
-          body: JSON.stringify({ Name: this.Name, password: this.password, Category: this.Category, email: this.email }),
+          body: JSON.stringify({ email: this.email, password: this.password }),
         })
           .then((resp) => {
             return resp.json();
           })
           .then(async (register_data) => {
-            this.$router.push('/');
+            const { response } = register_data;
+            if (response.errors) {
+              const { email, password } = response.errors;
+              console.log({ email, password });
+            } else {
+              this.$router.push("/");
+            }
           })
           .catch((error) => {
             console.log(error);
           });
       } catch (error) {
-        console.log("Unsuccessful Save ", error);
+        console.log("Registration unsuccessful: ", error);
       }
-}
-},
+    },
+  },
 };
 </script>
 
